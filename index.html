@@ -557,6 +557,20 @@
             color: #00d9ff;
             display: none;
         }
+
+        /* Live Stats Panel */
+        .stats-panel {
+            position: absolute;
+            top: 150px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(15px);
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            pointer-events: none;
+            display: none;
+        }
     </style>
 </head>
 
@@ -672,6 +686,14 @@
 
         <div class="mouse-indicator" id="mouseIndicator">
             🖱️ MOUSE MODE - Click to hit!
+        </div>
+
+        <div class="stats-panel" id="statsPanel">
+            <div style="font-size: 11px; color: #00d9ff; line-height: 1.6;">
+                <div>📊 Accuracy: <span id="liveAccuracy" style="color: #00ff41;">100%</span></div>
+                <div>⚡ Hit Rate: <span id="hitRate" style="color: #ffea00;">0/s</span></div>
+                <div>⏱️ Time: <span id="gameTime" style="color: #ff006e;">0:00</span></div>
+            </div>
         </div>
     </div>
 
@@ -852,9 +874,23 @@
             { id: 'first_hit', name: 'First Blood', icon: '🎯', condition: () => hits >= 1 },
             { id: 'combo_10', name: '10x Combo!', icon: '⚡', condition: () => combo >= 10 },
             { id: 'combo_25', name: 'Combo Master', icon: '🔥', condition: () => combo >= 25 },
+            { id: 'combo_50', name: 'Unstoppable!', icon: '💫', condition: () => combo >= 50 },
+            { id: 'combo_100', name: 'LEGENDARY', icon: '👑', condition: () => combo >= 100 },
             { id: 'score_1000', name: 'Rookie', icon: '🌟', condition: () => score >= 1000 },
             { id: 'score_5000', name: 'Pro Player', icon: '💎', condition: () => score >= 5000 },
-            { id: 'accuracy_90', name: 'Sharpshooter', icon: '🏹', condition: () => hits + misses > 20 && (hits / (hits + misses)) >= 0.9 }
+            { id: 'score_10000', name: 'Expert', icon: '🏆', condition: () => score >= 10000 },
+            { id: 'score_25000', name: 'Master', icon: '⭐', condition: () => score >= 25000 },
+            { id: 'score_50000', name: 'Grand Master', icon: '🎖️', condition: () => score >= 50000 },
+            { id: 'accuracy_90', name: 'Sharpshooter', icon: '🏹', condition: () => hits + misses > 20 && (hits / (hits + misses)) >= 0.9 },
+            { id: 'accuracy_95', name: 'Sniper Elite', icon: '🎯', condition: () => hits + misses > 50 && (hits / (hits + misses)) >= 0.95 },
+            { id: 'accuracy_99', name: 'Perfect Aim', icon: '💯', condition: () => hits + misses > 100 && (hits / (hits + misses)) >= 0.99 },
+            { id: 'perfect_10', name: 'Perfect 10', icon: '✨', condition: () => hits >= 10 && misses === 0 },
+            { id: 'perfect_50', name: 'Flawless', icon: '🌟', condition: () => hits >= 50 && misses === 0 },
+            { id: 'speed_demon', name: 'Speed Demon', icon: '⚡', condition: () => hits >= 30 && gameStartTime > 0 && (Date.now() - gameStartTime) < 30000 },
+            { id: 'survivor', name: 'Marathon Runner', icon: '🏃', condition: () => gameStartTime > 0 && (Date.now() - gameStartTime) > 180000 },
+            { id: 'mouse_master', name: 'Mouse Master', icon: '🖱️', condition: () => mouseMode && score >= 3000 },
+            { id: 'hand_master', name: 'Hand Master', icon: '🤚', condition: () => !mouseMode && trackingMode === 'hand' && score >= 3000 },
+            { id: 'zen_master', name: 'Inner Peace', icon: '🧘', condition: () => selectedMode === 'zen' && score >= 5000 }
         ];
 
         // Screen effects
@@ -914,6 +950,61 @@
                     oscillator.stop(audioContext.currentTime + 0.4);
                     break;
             }
+        }
+
+        // Background Music System
+        let musicOscillators = [];
+        let musicGainNode = null;
+        let musicPlaying = false;
+        let musicInterval = null;
+
+        function startBackgroundMusic() {
+            if (!audioContext || musicPlaying) return;
+            musicPlaying = true;
+
+            // Create gain node for music
+            musicGainNode = audioContext.createGain();
+            musicGainNode.gain.value = 0.08; // Low volume
+            musicGainNode.connect(audioContext.destination);
+
+            // Layered music (bass, melody, harmony)
+            const notes = [
+                [110, 0.25],  // Bass
+                [220, 0.12],  // Melody
+                [330, 0.08],  // Harmony
+                [440, 0.05]   // High
+            ];
+
+            notes.forEach(([freq, gain]) => {
+                const osc = audioContext.createOscillator();
+                const oscGain = audioContext.createGain();
+
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                oscGain.gain.value = gain;
+
+                osc.connect(oscGain);
+                oscGain.connect(musicGainNode);
+                osc.start();
+
+                musicOscillators.push(osc);
+            });
+
+            // Dynamic music based on combo
+            musicInterval = setInterval(() => {
+                if (!musicPlaying || !musicGainNode) return;
+                const intensity = Math.min(combo / 20, 1);
+                musicGainNode.gain.value = 0.08 + (intensity * 0.12);
+            }, 1000);
+        }
+
+        function stopBackgroundMusic() {
+            musicOscillators.forEach(osc => {
+                try { osc.stop(); } catch (e) { }
+            });
+            musicOscillators = [];
+            musicPlaying = false;
+            if (musicInterval) clearInterval(musicInterval);
         }
 
         // ==================== UTILITY FUNCTIONS ====================
@@ -1585,6 +1676,9 @@
             // Check for achievements
             checkAchievements();
 
+            // Update live stats
+            updateLiveStats();
+
             render();
             requestAnimationFrame(update);
         }
@@ -1974,6 +2068,26 @@
             }
         }
 
+        // Live Stats Update
+        function updateLiveStats() {
+            if (gameState !== 'playing' || !gameStartTime) {
+                document.getElementById('statsPanel').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('statsPanel').style.display = 'block';
+
+            const accuracy = hits + misses > 0 ? ((hits / (hits + misses)) * 100).toFixed(1) : 100;
+            const elapsed = (Date.now() - gameStartTime) / 1000;
+            const hitRate = elapsed > 0 ? (hits / elapsed).toFixed(1) : 0;
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = Math.floor(elapsed % 60);
+            const time = `${minutes}:${String(seconds).padStart(2, '0')}`;
+
+            document.getElementById('liveAccuracy').textContent = accuracy + '%';
+            document.getElementById('hitRate').textContent = hitRate + '/s';
+            document.getElementById('gameTime').textContent = time;
+        }
         // Fullscreen Toggle
         function toggleFullscreen() {
             if (!document.fullscreenElement) {
