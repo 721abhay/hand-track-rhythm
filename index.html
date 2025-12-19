@@ -610,6 +610,7 @@
         <div class="menu-buttons" style="margin-top: 30px;">
             <button class="menu-btn secondary" id="tutorialBtn">HOW TO PLAY</button>
             <button class="menu-btn secondary" id="settingsBtn">SETTINGS</button>
+            <button class="menu-btn secondary" id="enableMouseBtn">🖱️ MOUSE MODE</button>
         </div>
     </div>
 
@@ -1466,9 +1467,27 @@
         }
 
         function render() {
+            // Update screen effects
+            updateScreenEffects();
+
+            // Apply screen shake
+            ctx.save();
+            if (screenShake > 0) {
+                ctx.translate(
+                    (Math.random() - 0.5) * screenShake,
+                    (Math.random() - 0.5) * screenShake
+                );
+            }
+
             // Clear canvas
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Apply screen flash
+            if (screenFlash > 0) {
+                ctx.fillStyle = `rgba(255, 234, 0, ${screenFlash})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
 
             // Draw background
             if (gameState === 'playing') {
@@ -1499,6 +1518,9 @@
             if (handDetected && gameState === 'playing') {
                 drawCursor();
             }
+
+            // Restore canvas state (undo screen shake)
+            ctx.restore();
         }
 
         function update() {
@@ -1559,6 +1581,9 @@
                 activePowerup = null;
                 powerupIndicator.style.display = 'none';
             }
+
+            // Check for achievements
+            checkAchievements();
 
             render();
             requestAnimationFrame(update);
@@ -1977,6 +2002,14 @@
 
         // Fullscreen toggle
         document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+
+        // Mouse mode button
+        document.getElementById('enableMouseBtn').addEventListener('click', () => {
+            enableMouseMode();
+            mainMenu.classList.add('hide');
+            gameState = 'playing';
+            initGame();
+        });
 
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
