@@ -170,31 +170,47 @@
         .menu-title {
             font-size: 72px;
             font-weight: 900;
-            color: #00ff41;
-            text-shadow: 0 0 30px rgba(0, 255, 65, 1), 0 0 60px rgba(0, 255, 65, 0.6);
+            letter-spacing: 8px;
             margin-bottom: 20px;
-            letter-spacing: 4px;
-            animation: glow 2s ease-in-out infinite;
+            background: linear-gradient(45deg, #00ff41, #00d9ff, #ff006e, #ffea00, #00ff41);
+            background-size: 300% 300%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: rainbowShift 3s ease infinite, titleFloat 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 30px rgba(0, 255, 65, 0.6));
         }
 
-        @keyframes glow {
+        @keyframes rainbowShift {
 
             0%,
             100% {
-                text-shadow: 0 0 30px rgba(0, 255, 65, 1), 0 0 60px rgba(0, 255, 65, 0.6);
+                background-position: 0% 50%;
             }
 
             50% {
-                text-shadow: 0 0 40px rgba(0, 255, 65, 1), 0 0 80px rgba(0, 255, 65, 0.8);
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes titleFloat {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-8px);
             }
         }
 
         .menu-subtitle {
-            font-size: 24px;
+            font-size: 18px;
             color: #00d9ff;
-            text-shadow: 0 0 15px rgba(0, 217, 255, 0.8);
-            margin-bottom: 50px;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
+            margin-bottom: 40px;
+            text-shadow: 0 0 20px rgba(0, 217, 255, 0.8);
         }
 
         .menu-section {
