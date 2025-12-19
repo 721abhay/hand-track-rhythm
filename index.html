@@ -1971,6 +1971,13 @@
             }
         });
 
+        // Mouse/Touch controls for gameplay
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('click', handleMouseClick);
+
+        // Fullscreen toggle
+        document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
